@@ -12,7 +12,7 @@ public partial class IngatlanberlesiplatformContext : DbContext
     }
 
     public IngatlanberlesiplatformContext(DbContextOptions<IngatlanberlesiplatformContext> options)
-        : base(options)
+                : base(options)
     {
     }
 
