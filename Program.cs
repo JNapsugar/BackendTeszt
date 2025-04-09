@@ -66,9 +66,6 @@ namespace IngatlanokBackend
         {   
             var builder = WebApplication.CreateBuilder(args);
 
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                                  ?? Environment.GetEnvironmentVariable("CONNECTION_STRING");
-
             builder.Configuration.SetBasePath(Directory.GetCurrentDirectory());
             builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
