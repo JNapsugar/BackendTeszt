@@ -1,11 +1,13 @@
 ﻿using IngatlanokBackend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Pomelo.EntityFrameworkCore.MySql;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.EntityFrameworkCore.Design;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
@@ -67,19 +69,21 @@ namespace IngatlanokBackend
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Load configuration before using it
+            // Add configuration
             builder.Configuration.SetBasePath(Directory.GetCurrentDirectory());
             builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
-            // Retrieve connection string from configuration
+            // Retrieve the connection string from the configuration
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-            // Register the DbContext with the MySQL provider (Pomelo)
+            // Register DbContext with MySQL (Pomelo) provider
             builder.Services.AddDbContext<IngatlanberlesiplatformContext>(options =>
                 options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-            // Continue with the rest of the services setup
+            // Add services to the container.
             builder.Services.AddControllers();
+
+            // Set up CORS policy
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowSpecificOrigin", builder =>
@@ -90,11 +94,11 @@ namespace IngatlanokBackend
                 });
             });
 
-            // Authentication, Authorization, Swagger, etc.
+            // Configure authentication (JWT)
             builder.Services.AddAuthentication("Bearer")
                 .AddJwtBearer(options =>
                 {
-                    options.TokenValidationParameters = new TokenValidationParameters
+                    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
                     {
                         ValidateIssuer = true,
                         ValidateAudience = true,
@@ -102,23 +106,27 @@ namespace IngatlanokBackend
                         ValidateIssuerSigningKey = true,
                         ValidIssuer = builder.Configuration["Jwt:Issuer"],
                         ValidAudience = builder.Configuration["Jwt:Audience"],
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+                        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
                     };
                 });
 
+            // Add Swagger and other services
             builder.Services.AddSwaggerGen();
             builder.Services.AddEndpointsApiExplorer();
 
             var app = builder.Build();
 
+            // Middleware setup
             app.UseSwagger();
             app.UseSwaggerUI();
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseCors("AllowSpecificOrigin");
 
+            // Configure controllers
             app.MapControllers();
             app.Run();
+
 
         }
     }
