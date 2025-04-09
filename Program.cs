@@ -1,27 +1,23 @@
-using IngatlanokBackend.Models;
+﻿using IngatlanokBackend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Pomelo.EntityFrameworkCore.MySql;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using MySqlX.XDevAPI;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace IngatlanokBackend
-{  
+{
     public class Program
     {
         public static string ftpUrl = "ftp.nethely.hu";
         public static string ftpUserName = "ingatlan";
         public static string ftpPassword = "Ingatlanok12345";
-
         public static int SaltLength = 64;
-
         public static Dictionary<string, Felhasznalok> LoggedInUsers = new Dictionary<string, Felhasznalok>();
 
         public static string GenerateSalt()
@@ -44,7 +40,7 @@ namespace IngatlanokBackend
             mail.To.Add(mailAddressTo);
             mail.Subject = subject;
             mail.Body = body;
-            mail.IsBodyHtml = isHtml; 
+            mail.IsBodyHtml = isHtml;
 
             SmtpServer.Port = 587;
             SmtpServer.Credentials = new System.Net.NetworkCredential("ingatlanberlesiplatform@gmail.com", "mhwhbcbihzzozqvc");
@@ -52,7 +48,6 @@ namespace IngatlanokBackend
 
             await SmtpServer.SendMailAsync(mail);
         }
-
 
         public static string CreateSHA256(string input, string salt)
         {
@@ -69,19 +64,17 @@ namespace IngatlanokBackend
         }
 
         public static void Main(string[] args)
-        {   
+        {
             var builder = WebApplication.CreateBuilder(args);
 
-            var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
-
-            builder.Services.AddDbContext<IngatlanberlesiplatformContext>(options =>
-                options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
-
+            // 🔧 Konfiguráció beállítása először
             builder.Configuration.SetBasePath(Directory.GetCurrentDirectory());
             builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
+            // ✅ Adatbázis kapcsolat beállítása (Pomelo használatával)
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
             builder.Services.AddDbContext<IngatlanberlesiplatformContext>(options =>
-                options.UseMySQL(builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
             builder.Services.AddControllers();
 
@@ -90,9 +83,9 @@ namespace IngatlanokBackend
                 options.AddPolicy("AllowSpecificOrigin", builder =>
                 {
                     builder.WithOrigins("http://localhost:3000")
-                                 .AllowAnyMethod()
-                                 .AllowAnyHeader()
-                                 .AllowAnyOrigin();
+                           .AllowAnyMethod()
+                           .AllowAnyHeader()
+                           .AllowAnyOrigin();
                 });
             });
 
@@ -105,9 +98,9 @@ namespace IngatlanokBackend
                         ValidateAudience = true,
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
-                        ValidIssuer = builder.Configuration["Jwt:Issuer"], 
-                        ValidAudience = builder.Configuration["Jwt:Audience"], 
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])) 
+                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                        ValidAudience = builder.Configuration["Jwt:Audience"],
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
                     };
                 });
 
@@ -116,8 +109,9 @@ namespace IngatlanokBackend
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
-                app.UseSwagger();
-                app.UseSwaggerUI();
+
+            app.UseSwagger();
+            app.UseSwaggerUI();
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseCors("AllowSpecificOrigin");
@@ -126,6 +120,3 @@ namespace IngatlanokBackend
         }
     }
 }
-
-
-//Scaffold-DbContext "SERVER=localhost;PORT=3306;DATABASE=ingatlanberlesiplatform;USER=root;PASSWORD=;SSL MODE=none;" mysql.entityframeworkcore -outputdir Models -f
