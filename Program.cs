@@ -1,6 +1,12 @@
 using IngatlanokBackend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Pomelo.EntityFrameworkCore.MySql;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using MySqlX.XDevAPI;
 using System.Net.Mail;
 using System.Security.Cryptography;
@@ -66,9 +72,11 @@ namespace IngatlanokBackend
         {   
             var builder = WebApplication.CreateBuilder(args);
 
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                                  ?? Environment.GetEnvironmentVariable("CONNECTION_STRING");
-            
+            var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+
+            builder.Services.AddDbContext<IngatlanberlesiplatformContext>(options =>
+                options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
             builder.Configuration.SetBasePath(Directory.GetCurrentDirectory());
             builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
